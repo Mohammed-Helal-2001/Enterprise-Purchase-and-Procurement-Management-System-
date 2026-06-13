@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% if material %}Edit{% else %}Add{% endif %} Material - Purchase System{% endblock %}
+
+{% block content %}
+<div class="container mx-auto">
+    <!-- Header -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-white mb-2">
+            {% if material %}Edit Material{% else %}Add New Material{% endif %}
+        </h1>
+        <p class="text-gray-400">Fill in the details below</p>
+    </div>
+    
+    <form method="post" class="max-w-2xl">
+        {% csrf_token %}
+        
+        <div class="card p-6">
+            <h3 class="text-xl font-bold text-white mb-4">Material Information</h3>
+            
+            <div class="space-y-4">
+                <div class="form-group">
+                    <label class="form-label">Material name *</label>
+                    <input type="text" name="name" class="form-control" required
+                           value="{{ material.name|default:'' }}"
+                           placeholder="Enter material name">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Unit *</label>
+                    <input type="text" name="unit" class="form-control" required
+                           value="{{ material.unit|default:'' }}"
+                           placeholder="e.g. piece, kg, liter, meter">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Category</label>
+                    <input type="text" name="category" class="form-control"
+                           value="{{ material.category|default:'' }}"
+                           placeholder="e.g. electronics, raw materials, tools">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea name="description" class="form-control" rows="3"
+                              placeholder="Detailed material description">{{ material.description|default:'' }}</textarea>
+                </div>
+                
+                {% if material %}
+                <div class="form-group">
+                    <label class="flex items-center gap-2">
+                        <input type="checkbox" name="is_active" {% if material.is_active %}checked{% endif %}
+                               class="w-4 h-4 rounded">
+                        <span class="text-white">Material active</span>
+                    </label>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Submit Buttons -->
+        <div class="flex justify-end gap-4 mt-6">
+            <a href="{% url 'suppliers:material_list' %}" class="btn btn-outline">
+                Cancel
+            </a>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save ml-2"></i>
+                {% if material %}Update{% else %}Save{% endif %}
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ LANG.purchase_requests }} - {{ LANG.purchase_system }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-white mb-2">{{ LANG.purchase_requests }}</h1>
+            <p class="text-gray-400">{{ LANG.purchase_requests }}</p>
+        </div>
+        <a href="{% url 'purchasing:request_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus ml-2"></i>
+            {{ LANG.new_request }}
+        </a>
+    </div>
+    
+    <!-- Filters -->
+    <div class="card p-4 mb-6">
+        <form method="get" class="flex flex-wrap gap-4 items-end">
+            <div class="flex-1 min-w-64">
+                <label class="form-label">{{ LANG.search }}</label>
+                <input type="text" name="search" class="form-control" 
+                       placeholder="{{ LANG.search_placeholder }}" value="{{ search|default:'' }}">
+            </div>
+            <div class="w-48">
+                <label class="form-label">{{ LANG.status }}</label>
+                <select name="status" class="form-control">
+                    <option value="">{{ LANG.all }}</option>
+                    {% for value, label in status_choices %}
+                    <option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-search ml-2"></i>
+                {{ LANG.search }}
+            </button>
+        </form>
+    </div>
+    
+    <!-- Requests Table -->
+    <div class="card overflow-hidden">
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>{{ LANG.request_number }}</th>
+                        <th>{{ LANG.request_title }}</th>
+                        <th>{{ LANG.created_by }}</th>
+                        <th>{{ LANG.quantity }}</th>
+                        <th>{{ LANG.status }}</th>
+                        <th>{{ LANG.created_at }}</th>
+                        <th>{{ LANG.actions }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for pr in page_obj %}
+                    <tr>
+                        <td class="font-mono text-primary font-bold">{{ pr.pr_number }}</td>
+                        <td>{{ pr.title }}</td>
+                        <td>{{ pr.created_by.get_full_name|default:pr.created_by.email }}</td>
+                        <td class="text-center">{{ pr.total_items }}</td>
+                        <td>
+                            <span class="badge badge-{{ pr.status }}">{{ pr.get_status_display }}</span>
+                        </td>
+                        <td class="text-gray-400">{{ pr.created_at|date:"Y-m-d" }}</td>
+                        <td>
+                            <a href="{% url 'purchasing:request_detail' pr.id %}" class="btn btn-outline btn-sm">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-8">
+                            <div class="empty-state">
+                                <i class="fas fa-inbox empty-state-icon"></i>
+                                <p class="empty-state-text">{{ LANG.no_requests }}</p>
+                                <a href="{% url 'purchasing:request_create' %}" class="btn btn-primary mt-4">
+                                    {{ LANG.new_request }}
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+        <div class="p-4 border-t border-gray-700">
+            <div class="flex justify-center gap-2">
+                {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}{% if status %}&status={{ status }}{% endif %}{% if search %}&search={{ search }}{% endif %}" 
+                   class="btn btn-outline btn-sm">
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+                {% endif %}
+                
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                    <span class="btn btn-primary btn-sm">{{ num }}</span>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <a href="?page={{ num }}{% if status %}&status={{ status }}{% endif %}{% if search %}&search={{ search }}{% endif %}" 
+                       class="btn btn-outline btn-sm">{{ num }}</a>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}{% if status %}&status={{ status }}{% endif %}{% if search %}&search={{ search }}{% endif %}" 
+                   class="btn btn-outline btn-sm">
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

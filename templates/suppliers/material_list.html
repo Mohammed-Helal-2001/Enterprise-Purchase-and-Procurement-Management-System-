@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ LANG.raw_materials }} - {{ LANG.purchase_system }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-white mb-2">{{ LANG.raw_materials }}</h1>
+            <p class="text-gray-400">{{ LANG.manage_materials }}</p>
+        </div>
+        <a href="{% url 'suppliers:material_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus ml-2"></i>
+            {{ LANG.add_material }}
+        </a>
+    </div>
+    
+    <!-- Search & Filter -->
+    <div class="card p-4 mb-6">
+        <form method="get" class="flex flex-wrap gap-4">
+            <div class="flex-1 min-w-64">
+                <input type="text" name="search" class="form-control" 
+                       placeholder="{{ LANG.search_material }}" value="{{ search|default:'' }}">
+            </div>
+            <div class="w-48">
+                <select name="category" class="form-control">
+                    <option value="">{{ LANG.all }}</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat }}" {% if request.GET.category == cat %}selected{% endif %}>{{ cat }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-search ml-2"></i>
+                {{ LANG.search }}
+            </button>
+        </form>
+    </div>
+    
+    <!-- Materials Table -->
+    <div class="card overflow-hidden">
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>{{ LANG.material_name }}</th>
+                        <th>{{ LANG.description }}</th>
+                        <th>{{ LANG.unit }}</th>
+                        <th>{{ LANG.category }}</th>
+                        <th>{{ LANG.status }}</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for material in page_obj %}
+                    <tr>
+                        <td class="font-bold text-white">{{ material.name }}</td>
+                        <td>{{ material.description|truncatechars:50 }}</td>
+                        <td>{{ material.unit }}</td>
+                        <td>{{ material.category|default:'-' }}</td>
+                        <td>
+                            <span class="badge {% if material.is_active %}badge-approved{% else %}badge-draft{% endif %}">
+                                {% if material.is_active %}{{ LANG.active }}{% else %}{{ LANG.inactive }}{% endif %}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="flex gap-2">
+                                <a href="{% url 'suppliers:material_detail' material.id %}" class="btn btn-outline btn-sm">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{% url 'suppliers:material_update' material.id %}" class="btn btn-outline btn-sm">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-8">
+                            <div class="empty-state">
+                                <i class="fas fa-boxes empty-state-icon"></i>
+                                <p class="empty-state-text">{{ LANG.no_materials }}</p>
+                                <a href="{% url 'suppliers:material_create' %}" class="btn btn-primary mt-4">
+                                    {{ LANG.add_new_material }}
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+        <div class="p-4 border-t border-gray-700">
+            <div class="flex justify-center gap-2">
+                {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}{% if search %}&search={{ search }}{% endif %}" 
+                   class="btn btn-outline btn-sm">
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+                {% endif %}
+                
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                    <span class="btn btn-primary btn-sm">{{ num }}</span>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <a href="?page={{ num }}{% if search %}&search={{ search }}{% endif %}" 
+                       class="btn btn-outline btn-sm">{{ num }}</a>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}{% if search %}&search={{ search }}{% endif %}" 
+                   class="btn btn-outline btn-sm">
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

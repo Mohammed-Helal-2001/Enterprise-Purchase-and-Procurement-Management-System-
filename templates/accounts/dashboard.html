@@ -1,0 +1,404 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - {{ LANG.purchase_system }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto">
+    <!-- Header -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-white mb-2">{{ title }}</h1>
+        <p class="text-gray-400">{{ LANG.welcome }}, {{ user.get_full_name|default:user.email }} - <span class="badge badge-{{ user.role }}">{{ user.get_role_display }}</span></p>
+    </div>
+    
+    <!-- Stats Cards - Different based on role -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {% if user.role == 'requester' or user.role == 'admin' %}
+        <!-- Total Requests -->
+        <div class="card stat-card p-6 fade-in" style="animation-delay: 0.1s;">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-400 text-sm mb-1">{{ LANG.total_requests }}</p>
+                    <p class="text-4xl font-bold text-white">{{ stats.total }}</p>
+                </div>
+                <div class="stat-icon primary">
+                    <i class="fas fa-file-alt"></i>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Draft Requests -->
+        <div class="card stat-card p-6 fade-in" style="animation-delay: 0.2s;">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-400 text-sm mb-1">{{ LANG.status_draft }}</p>
+                    <p class="text-4xl font-bold text-white">{{ stats.draft }}</p>
+                </div>
+                <div class="stat-icon secondary">
+                    <i class="fas fa-edit"></i>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Pending Requests -->
+        <div class="card stat-card p-6 fade-in" style="animation-delay: 0.3s;">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-400 text-sm mb-1">{{ LANG.pending_approval }}</p>
+                    <p class="text-4xl font-bold text-white">{{ stats.pending }}</p>
+                </div>
+                <div class="stat-icon warning">
+                    <i class="fas fa-clock"></i>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Approved Requests -->
+        <div class="card stat-card p-6 fade-in" style="animation-delay: 0.4s;">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-400 text-sm mb-1">{{ LANG.approved_requests }}</p>
+                    <p class="text-4xl font-bold text-white">{{ stats.approved }}</p>
+                </div>
+                <div class="stat-icon success">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if user.role == 'approver' %}
+        <!-- Pending Approval -->
+        <div class="card stat-card p-6 fade-in" style="animation-delay: 0.1s;">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-400 text-sm mb-1">Pending approvals</p>
+                    <p class="text-4xl font-bold text-white">{{ stats.pending }}</p>
+                </div>
+                <div class="stat-icon warning">
+                    <i class="fas fa-clock"></i>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Approved Today -->
+        <div class="card stat-card p-6 fade-in" style="animation-delay: 0.2s;">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-400 text-sm mb-1">Approved today</p>
+                    <p class="text-4xl font-bold text-white">{{ stats.approved_today }}</p>
+                </div>
+                <div class="stat-icon success">
+                    <i class="fas fa-check"></i>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Rejected Today -->
+        <div class="card stat-card p-6 fade-in" style="animation-delay: 0.3s;">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-400 text-sm mb-1">{{ LANG.rejected_today }}</p>
+                    <p class="text-4xl font-bold text-white">{{ stats.rejected_today }}</p>
+                </div>
+                <div class="stat-icon danger">
+                    <i class="fas fa-times"></i>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Total Requests -->
+        <div class="card stat-card p-6 fade-in" style="animation-delay: 0.4s;">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-400 text-sm mb-1">{{ LANG.total_requests }}</p>
+                    <p class="text-4xl font-bold text-white">{{ stats.total }}</p>
+                </div>
+                <div class="stat-icon primary">
+                    <i class="fas fa-file-alt"></i>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if user.role == 'purchasing_officer' %}
+        <!-- Approved Requests -->
+        <div class="card stat-card p-6 fade-in" style="animation-delay: 0.1s;">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-400 text-sm mb-1">{{ LANG.approved_requests }}</p>
+                    <p class="text-4xl font-bold text-white">{{ stats.approved }}</p>
+                </div>
+                <div class="stat-icon success">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+            </div>
+        </div>
+        
+        <!-- RFQ Sent -->
+        <div class="card stat-card p-6 fade-in" style="animation-delay: 0.2s;">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-400 text-sm mb-1">{{ LANG.rfq_sent }}</p>
+                    <p class="text-4xl font-bold text-white">{{ stats.rfq_sent }}</p>
+                </div>
+                <div class="stat-icon primary">
+                    <i class="fas fa-paper-plane"></i>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Awarded -->
+        <div class="card stat-card p-6 fade-in" style="animation-delay: 0.3s;">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-400 text-sm mb-1">Awarded</p>
+                    <p class="text-4xl font-bold text-white">{{ stats.awarded }}</p>
+                </div>
+                <div class="stat-icon success">
+                    <i class="fas fa-trophy"></i>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Pending Approval -->
+        <div class="card stat-card p-6 fade-in" style="animation-delay: 0.4s;">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-400 text-sm mb-1">Pending approval</p>
+                    <p class="text-4xl font-bold text-white">{{ stats.pending_approval }}</p>
+                </div>
+                <div class="stat-icon warning">
+                    <i class="fas fa-hourglass-half"></i>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Charts Row -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <!-- Request Status Chart -->
+        <div class="card p-6 fade-in" style="animation-delay: 0.5s;">
+            <h3 class="text-xl font-bold text-white mb-4">Request status</h3>
+            <div class="h-64">
+                <canvas id="requestStatusChart"></canvas>
+            </div>
+        </div>
+        
+        <!-- Monthly Requests Chart -->
+        <div class="card p-6 fade-in" style="animation-delay: 0.6s;">
+            <h3 class="text-xl font-bold text-white mb-4">Monthly requests</h3>
+            <div class="h-64">
+                <canvas id="monthlyRequestsChart"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Requests & Quick Actions -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Recent Requests -->
+        <div class="card p-6 lg:col-span-2 fade-in" style="animation-delay: 0.7s;">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-xl font-bold text-white">Recent requests</h3>
+                <a href="{% url 'purchasing:request_list' %}" class="text-primary hover:underline">
+                    View all <i class="fas fa-arrow-left mr-1"></i>
+                </a>
+            </div>
+            
+            {% if recent_requests %}
+            <div class="table-container">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Request Number</th>
+                            <th>Title</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pr in recent_requests %}
+                        <tr>
+                            <td class="font-mono text-primary">{{ pr.pr_number }}</td>
+                            <td>{{ pr.title }}</td>
+                            <td>
+                                <span class="badge badge-{{ pr.status }}">{{ pr.get_status_display }}</span>
+                            </td>
+                            <td class="text-gray-400">{{ pr.created_at|date:"Y-m-d" }}</td>
+                            <td>
+                                <a href="{% url 'purchasing:request_detail' pr.id %}" class="btn btn-outline btn-sm">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <i class="fas fa-inbox empty-state-icon"></i>
+                <p class="empty-state-text">No requests yet</p>
+                <a href="{% url 'purchasing:request_create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus ml-2"></i>
+                    Create first request
+                </a>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Quick Actions -->
+        <div class="card p-6 fade-in" style="animation-delay: 0.8s;">
+            <h3 class="text-xl font-bold text-white mb-4">Quick actions</h3>
+            
+            <div class="space-y-3">
+                <a href="{% url 'purchasing:request_create' %}" class="btn btn-primary w-full">
+                    <i class="fas fa-plus ml-2"></i>
+                    New purchase request
+                </a>
+                
+                {% if user.role == 'admin' or user.role == 'purchasing_officer' %}
+                <a href="{% url 'suppliers:supplier_create' %}" class="btn btn-outline w-full">
+                    <i class="fas fa-user-plus ml-2"></i>
+                    Add supplier
+                </a>
+                
+                <a href="{% url 'suppliers:material_create' %}" class="btn btn-outline w-full">
+                    <i class="fas fa-box ml-2"></i>
+                    Add material
+                </a>
+                {% endif %}
+                
+                <a href="{% url 'accounts:profile' %}" class="btn btn-outline w-full">
+                    <i class="fas fa-user ml-2"></i>
+                    My profile
+                </a>
+            </div>
+            
+            <!-- Stats Summary -->
+            <div class="mt-6 pt-6 border-t border-gray-700">
+                <div class="flex justify-between items-center mb-3">
+                    <span class="text-gray-400">Suppliers</span>
+                    <span class="text-white font-bold">{{ total_suppliers }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Destroy existing charts before creating new ones
+    function destroyChart(chartId) {
+        const canvas = document.getElementById(chartId);
+        if (canvas) {
+            const chart = Chart.getChart(canvas);
+            if (chart) {
+                chart.destroy();
+            }
+        }
+    }
+    
+    // Chart.js Data - Use stats from context
+    const statusChartData = {
+        draft: {{ stats.draft|default:0 }},
+        pending: {{ stats.pending|default:0 }},
+        approved: {{ stats.approved|default:0 }},
+        rejected: {{ stats.rejected|default:0 }},
+        awarded: {{ stats.awarded|default:0 }}
+    };
+    
+    const monthlyChartData = {
+        values: [12, 19, 15, 25, 22, 30]
+    };
+    
+    // Initialize Charts
+    document.addEventListener('DOMContentLoaded', function() {
+        // Destroy any existing charts on the canvas
+        destroyChart('requestStatusChart');
+        destroyChart('monthlyRequestsChart');
+        
+        // Request Status Doughnut Chart
+        const statusCtx = document.getElementById('requestStatusChart');
+        if (statusCtx) {
+            new Chart(statusCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Draft', 'Pending', 'Approved', 'Rejected', 'Awarded'],
+                    datasets: [{
+                        data: [
+                            statusChartData.draft,
+                            statusChartData.pending,
+                            statusChartData.approved,
+                            statusChartData.rejected,
+                            statusChartData.awarded
+                        ],
+                        backgroundColor: [
+                            '#71717a',
+                            '#fbbf24',
+                            '#4ade80',
+                            '#f87171',
+                            '#c084fc'
+                        ],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: '#e2e8f0',
+                                padding: 15,
+                                font: { size: 12 }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Monthly Requests Bar Chart
+        const monthlyCtx = document.getElementById('monthlyRequestsChart');
+        if (monthlyCtx) {
+            new Chart(monthlyCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                    datasets: [{
+                        label: 'Request Count',
+                        data: monthlyChartData.values,
+                        backgroundColor: 'rgba(59, 130, 246, 0.5)',
+                        borderColor: '#3b82f6',
+                        borderWidth: 2,
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(71, 85, 105, 0.3)' },
+                            ticks: { color: '#94a3b8' }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#94a3b8' }
+                        }
+                    }
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

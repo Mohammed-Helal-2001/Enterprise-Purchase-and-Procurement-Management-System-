@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Quotations - Purchase System{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Quotations</h3>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Supplier</th>
+                                    <th>Purchase Request</th>
+                                    <th>Total Price</th>
+                                    <th>Status</th>
+                                    <th>Delivery Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for quotation in quotations %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td>{{ quotation.supplier.name }}</td>
+                                    <td>{{ quotation.purchase_request.title }}</td>
+                                    <td>{{ quotation.total_price }}</td>
+                                    <td>
+                                        <span class="badge badge-{{ quotation.status }}">
+                                            {{ quotation.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>{{ quotation.delivery_date|date:"Y-m-d" }}</td>
+                                    <td>
+                                        <a href="{% url 'suppliers:quotation_detail' quotation.id %}" class="btn btn-sm btn-info">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="7" class="text-center">No quotations found</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

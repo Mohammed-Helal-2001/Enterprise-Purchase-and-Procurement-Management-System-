@@ -1,0 +1,183 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ supplier.name }} - Purchase System{% endblock %}
+
+{% block content %}
+<div class="container mx-auto">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-8">
+        <div class="flex items-center gap-4">
+            <a href="{% url 'suppliers:supplier_list' %}" class="btn btn-outline btn-sm">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <div>
+                <div class="flex items-center gap-3 mb-1">
+                    <h1 class="text-3xl font-bold text-white">{{ supplier.name }}</h1>
+                    {% if supplier.is_active %}
+                    <span class="px-2 py-1 bg-green-900 text-green-300 rounded text-xs font-bold">ACTIVE</span>
+                    {% else %}
+                    <span class="px-2 py-1 bg-red-900 text-red-300 rounded text-xs font-bold">INACTIVE</span>
+                    {% endif %}
+                </div>
+                <div class="flex items-center gap-2 text-yellow-400">
+                    {% for i in "12345" %}
+                    {% if forloop.counter <= supplier.rating %}
+                    <i class="fas fa-star text-sm"></i>
+                    {% else %}
+                    <i class="far fa-star text-sm"></i>
+                    {% endif %}
+                    {% endfor %}
+                    <span class="text-gray-400 ml-1">({{ supplier.rating }}/5)</span>
+                </div>
+            </div>
+        </div>
+        <div class="flex gap-2">
+            <a href="{% url 'suppliers:supplier_update' supplier.id %}" class="btn btn-primary">
+                <i class="fas fa-edit mr-2"></i>
+                Edit
+            </a>
+            <a href="{% url 'suppliers:supplier_delete' supplier.id %}" class="btn btn-danger">
+                <i class="fas fa-trash mr-2"></i>
+                Delete
+            </a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Left: Info -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Contact Info -->
+            <div class="card p-6">
+                <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                    <i class="fas fa-address-card text-blue-400"></i> Contact Information
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <p class="text-gray-500 text-sm">Email</p>
+                        <p class="text-white flex items-center gap-2">
+                            <i class="fas fa-envelope text-gray-500 w-4"></i>
+                            {{ supplier.email }}
+                        </p>
+                    </div>
+                    <div>
+                        <p class="text-gray-500 text-sm">Phone</p>
+                        <p class="text-white flex items-center gap-2">
+                            <i class="fas fa-phone text-gray-500 w-4"></i>
+                            {{ supplier.phone }}
+                        </p>
+                    </div>
+                    <div>
+                        <p class="text-gray-500 text-sm">Contact Person</p>
+                        <p class="text-white flex items-center gap-2">
+                            <i class="fas fa-user text-gray-500 w-4"></i>
+                            {{ supplier.contact_person|default:'—' }}
+                        </p>
+                    </div>
+                    <div class="md:col-span-2">
+                        <p class="text-gray-500 text-sm">Address</p>
+                        <p class="text-white flex items-center gap-2">
+                            <i class="fas fa-map-marker-alt text-gray-500 w-4"></i>
+                            {{ supplier.address }}
+                        </p>
+                    </div>
+                </div>
+                {% if supplier.notes %}
+                <div class="mt-4 pt-4 border-t border-gray-700">
+                    <p class="text-gray-500 text-sm mb-1">Notes</p>
+                    <p class="text-gray-300">{{ supplier.notes }}</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Supplied Materials -->
+            <div class="card p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                        <i class="fas fa-boxes text-green-400"></i> Supplied Materials
+                    </h3>
+                    <span class="px-3 py-1 bg-gray-800 text-gray-300 rounded text-sm">
+                        {{ supplier.material_prices.count }} materials
+                    </span>
+                </div>
+
+                {% if supplier.material_prices.exists %}
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Material</th>
+                                <th>Category</th>
+                                <th>Unit</th>
+                                <th>Lead Time</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for price in supplier.material_prices.all %}
+                            <tr>
+                                <td>
+                                    <span class="text-white font-medium">{{ price.material.name }}</span>
+                                </td>
+                                <td>
+                                    <span class="text-gray-400">{{ price.material.category|default:'—' }}</span>
+                                </td>
+                                <td><span class="text-gray-400">{{ price.material.unit }}</span></td>
+                                <td>
+                                    <span class="text-white">{{ price.lead_time }} days</span>
+                                </td>
+                                <td>
+                                    {% if price.is_available %}
+                                    <span class="text-green-400 text-sm"><i class="fas fa-check-circle mr-1"></i>Available</span>
+                                    {% else %}
+                                    <span class="text-red-400 text-sm"><i class="fas fa-times-circle mr-1"></i>Unavailable</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-8">
+                    <i class="fas fa-box-open text-gray-600 text-4xl mb-3"></i>
+                    <p class="text-gray-400">No materials linked to this supplier yet.</p>
+                    <a href="{% url 'suppliers:supplier_update' supplier.id %}" class="btn btn-primary mt-3">
+                        <i class="fas fa-plus mr-2"></i> Add Materials
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Right: Quotations -->
+        <div class="space-y-6">
+            <div class="card p-6">
+                <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                    <i class="fas fa-file-invoice text-purple-400"></i> Recent Quotations
+                </h3>
+                {% if quotations %}
+                <div class="space-y-3">
+                    {% for q in quotations %}
+                    <div class="p-3 bg-gray-800 rounded-lg border border-gray-700">
+                        <div class="flex items-center justify-between mb-1">
+                            <a href="{% url 'suppliers:quotation_detail' q.id %}" class="text-blue-400 hover:underline text-sm font-medium">
+                                {{ q.purchase_request.pr_number }}
+                            </a>
+                            <span class="text-white font-bold text-sm">{{ q.total_amount|floatformat:2 }} SAR</span>
+                        </div>
+                        <p class="text-gray-500 text-xs">{{ q.created_at|date:"Y-m-d" }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-6">
+                    <i class="fas fa-file text-gray-600 text-3xl mb-2"></i>
+                    <p class="text-gray-500 text-sm">No quotations yet</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

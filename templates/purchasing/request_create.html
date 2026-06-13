@@ -1,0 +1,159 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ LANG.create_purchase_request }} - {{ LANG.purchase_system }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto">
+    <!-- Header -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-white mb-2">{{ LANG.create_purchase_request }}</h1>
+        <p class="text-gray-400">{{ LANG.fill_data }}</p>
+    </div>
+    
+    <form method="post" id="requestForm" class="space-y-6">
+        {% csrf_token %}
+        
+        <!-- Request Info Card -->
+        <div class="card p-6">
+            <h3 class="text-xl font-bold text-white mb-4">{{ LANG.request_info }}</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="form-group">
+                    <label class="form-label">{{ LANG.request_title }} *</label>
+                    <input type="text" name="title" class="form-control" required
+                           placeholder="{{ LANG.request_title }}">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">{{ LANG.request_description }}</label>
+                    <textarea name="description" class="form-control" rows="3"
+                              placeholder="{{ LANG.request_description }}"></textarea>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Items Card -->
+        <div class="card p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-xl font-bold text-white">{{ LANG.required_materials }}</h3>
+                <button type="button" id="addItemBtn" class="btn btn-outline">
+                    <i class="fas fa-plus ml-2"></i>
+                    {{ LANG.add_material }}
+                </button>
+            </div>
+            
+            <div id="itemsContainer" class="space-y-4">
+                <!-- Items will be added here dynamically -->
+            </div>
+            
+            {% if not materials %}
+            <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle ml-2"></i>
+                {{ LANG.no_raw_materials }}
+                <a href="{% url 'suppliers:material_create' %}" class="underline">{{ LANG.add_material }}</a>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Submit Buttons -->
+        <div class="flex justify-end gap-4">
+            <a href="{% url 'purchasing:request_list' %}" class="btn btn-outline">
+                {{ LANG.cancel }}
+            </a>
+            <button type="submit" name="save_draft" class="btn btn-outline">
+                <i class="fas fa-save ml-2"></i>
+                {{ LANG.save_draft }}
+            </button>
+            <button type="submit" name="submit_approval" class="btn btn-primary">
+                <i class="fas fa-paper-plane ml-2"></i>
+                {{ LANG.create_submit }}
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Item Template -->
+<template id="itemTemplate">
+    <div class="dynamic-item card p-4 fade-in">
+        <div class="flex items-start gap-4">
+            <div class="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="form-group mb-0">
+                    <label class="form-label">{{ LANG.material }} *</label>
+                    <select name="material[]" class="form-control" required>
+                        <option value="">{{ LANG.select_material }}</option>
+                        {% for material in materials %}
+                        <option value="{{ material.id }}">{{ material.name }} ({{ material.unit }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-group mb-0">
+                    <label class="form-label">{{ LANG.quantity }} *</label>
+                    <input type="number" name="quantity[]" class="form-control" 
+                           min="1" step="0.01" required placeholder="{{ LANG.enter_quantity }}">
+                </div>
+                
+                <div class="form-group mb-0">
+                    <label class="form-label">{{ LANG.additional_description }}</label>
+                    <input type="text" name="item_description[]" class="form-control" 
+                           placeholder="{{ LANG.additional_description }}">
+                </div>
+            </div>
+            
+            <button type="button" class="remove-item btn btn-danger btn-sm mt-6">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+    </div>
+</template>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const LANG = {
+        cannot_delete_last_item: '{{ LANG.cannot_delete_last_item }}',
+        add_at_least_one_material: '{{ LANG.add_at_least_one_material }}'
+    };
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const itemsContainer = document.getElementById('itemsContainer');
+        const addItemBtn = document.getElementById('addItemBtn');
+        const itemTemplate = document.getElementById('itemTemplate');
+        
+        // Add first item on load
+        addItem();
+        
+        // Add item button
+        addItemBtn.addEventListener('click', addItem);
+        
+        function addItem() {
+            const newItem = itemTemplate.content.cloneNode(true);
+            itemsContainer.appendChild(newItem);
+        }
+        
+        // Remove item
+        itemsContainer.addEventListener('click', function(e) {
+            if (e.target.classList.contains('remove-item') || e.target.closest('.remove-item')) {
+                const btn = e.target.classList.contains('remove-item') ? e.target : e.target.closest('.remove-item');
+                const item = btn.closest('.dynamic-item');
+                
+                if (itemsContainer.children.length > 1) {
+                    item.remove();
+                } else {
+                    showAlert(LANG.cannot_delete_last_item, 'warning');
+                }
+            }
+        });
+        
+        // Form validation
+        document.getElementById('requestForm').addEventListener('submit', function(e) {
+            const items = itemsContainer.querySelectorAll('.dynamic-item');
+            if (items.length === 0) {
+                e.preventDefault();
+                showAlert(LANG.add_at_least_one_material, 'warning');
+            }
+        });
+    });
+</script>
+{% endblock %}

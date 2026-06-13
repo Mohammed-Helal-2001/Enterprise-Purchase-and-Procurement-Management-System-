@@ -1,0 +1,16 @@
+# Core
+Django==4.2.30
+django-crispy-forms==2.5
+crispy-bootstrap5==2026.3
+django-chartjs==2.3.0
+
+# Utilities
+Pillow==12.2.0
+python-dotenv==1.2.2
+reportlab==4.5.1
+
+# Development
+black==26.5.1
+flake8==7.3.0
+isort==8.0.1
+ipython==9.14.1

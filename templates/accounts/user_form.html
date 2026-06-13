@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% if object %}Edit User{% else %}Add User{% endif %} - Purchase System{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">{% if object %}Edit User{% else %}Add New User{% endif %}</h3>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="form-group mb-3">
+                            <label for="id_email">Email</label>
+                            <input type="email" name="email" id="id_email" class="form-control" 
+                                   value="{{ form.email.value|default:'' }}" required>
+                            {% if form.email.errors %}
+                            <div class="text-danger">{{ form.email.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="id_first_name">First name</label>
+                                    <input type="text" name="first_name" id="id_first_name" class="form-control" 
+                                           value="{{ form.first_name.value|default:'' }}">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="id_last_name">Last name</label>
+                                    <input type="text" name="last_name" id="id_last_name" class="form-control" 
+                                           value="{{ form.last_name.value|default:'' }}">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            <label for="id_role">Role</label>
+                            <select name="role" id="id_role" class="form-control">
+                                <option value="requester" {% if form.role.value == 'requester' %}selected{% endif %}>Requester</option>
+                                <option value="approver" {% if form.role.value == 'approver' %}selected{% endif %}>Approver</option>
+                                <option value="purchasing_officer" {% if form.role.value == 'purchasing_officer' %}selected{% endif %}>Purchasing Officer</option>
+                                <option value="admin" {% if form.role.value == 'admin' %}selected{% endif %}>Administrator</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            <label for="id_phone">Phone</label>
+                            <input type="text" name="phone" id="id_phone" class="form-control" 
+                                   value="{{ form.phone.value|default:'' }}">
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            <label for="id_department">Department</label>
+                            <input type="text" name="department" id="id_department" class="form-control" 
+                                   value="{{ form.department.value|default:'' }}">
+                        </div>
+                        
+                        {% if not object %}
+                        <div class="form-group mb-3">
+                            <label for="id_password">Password</label>
+                            <input type="password" name="password" id="id_password" class="form-control" required>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="form-group mb-3">
+                            <label>
+                                <input type="checkbox" name="is_active" {% if form.is_active.value %}checked{% endif %}>
+                                Active
+                            </label>
+                        </div>
+                        
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i>
+                                Save
+                            </button>
+                            <a href="{% url 'accounts:user_list' %}" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

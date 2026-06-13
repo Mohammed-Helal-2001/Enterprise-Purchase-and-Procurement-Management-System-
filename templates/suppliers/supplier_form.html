@@ -1,0 +1,184 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% if supplier %}Edit{% else %}Add{% endif %} Supplier - Purchase System{% endblock %}
+
+{% block content %}
+<div class="container mx-auto">
+    <!-- Header -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-white mb-2">
+            {% if supplier %}Edit Supplier{% else %}Add New Supplier{% endif %}
+        </h1>
+        <p class="text-gray-400">Fill in the details and select the materials this supplier provides</p>
+    </div>
+    
+    <form method="post" class="max-w-4xl">
+        {% csrf_token %}
+        
+        <!-- Supplier Info -->
+        <div class="card p-6 mb-6">
+            <h3 class="text-xl font-bold text-white mb-4">Supplier Information</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="form-group">
+                    <label class="form-label">Supplier name *</label>
+                    <input type="text" name="name" class="form-control" required
+                           value="{{ supplier.name|default:'' }}"
+                           placeholder="Enter supplier name">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Email *</label>
+                    <input type="email" name="email" class="form-control" required
+                           value="{{ supplier.email|default:'' }}"
+                           placeholder="example@supplier.com">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Phone *</label>
+                    <input type="text" name="phone" class="form-control" required
+                           value="{{ supplier.phone|default:'' }}"
+                           placeholder="+966 50 123 4567">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Contact Person</label>
+                    <input type="text" name="contact_person" class="form-control"
+                           value="{{ supplier.contact_person|default:'' }}"
+                           placeholder="Contact person name">
+                </div>
+                
+                <div class="form-group md:col-span-2">
+                    <label class="form-label">Address *</label>
+                    <textarea name="address" class="form-control" rows="2" required
+                              placeholder="Full address">{{ supplier.address|default:'' }}</textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Rating (0-5)</label>
+                    <input type="number" name="rating" class="form-control" min="0" max="5" step="0.1"
+                           value="{{ supplier.rating|default:'0' }}">
+                </div>
+                
+                <div class="form-group">
+                    {% if supplier %}
+                    <label class="flex items-center gap-2 mt-6">
+                        <input type="checkbox" name="is_active" {% if supplier.is_active %}checked{% endif %}
+                               class="w-4 h-4 rounded">
+                        <span class="text-white">Active</span>
+                    </label>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="form-group md:col-span-2 mt-4">
+                <label class="form-label">Notes</label>
+                <textarea name="notes" class="form-control" rows="2"
+                          placeholder="Additional notes">{{ supplier.notes|default:'' }}</textarea>
+            </div>
+        </div>
+        
+        <!-- Materials Section -->
+        <div class="card p-6">
+            <h3 class="text-xl font-bold text-white mb-2">Supplied Materials</h3>
+            <p class="text-gray-400 mb-4">Select the materials this supplier provides. Only these materials will appear in the "Send to Supplier" modal.</p>
+            
+            {% if materials %}
+            <div class="table-container">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px;">
+                                <input type="checkbox" id="selectAll" onchange="toggleAllMaterials(this)" class="w-4 h-4">
+                            </th>
+                            <th>Material</th>
+                            <th>Category</th>
+                            <th>Unit</th>
+                            <th style="width: 120px;">Lead Time (days)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for material in materials %}
+                        <tr class="hover:bg-gray-700 transition-colors">
+                            <td class="text-center">
+                                <input type="checkbox" 
+                                       name="materials[]" 
+                                       value="{{ material.id }}"
+                                       onchange="toggleRow(this)"
+                                       {% if supplier and material.id in linked_material_ids %}checked{% endif %}
+                                       class="material-check w-4 h-4">
+                            </td>
+                            <td>
+                                <label class="cursor-pointer text-white">{{ material.name }}</label>
+                                <input type="hidden" name="lead_time[]" value="{{ material.lead_time|default:'7' }}">
+                            </td>
+                            <td><span class="text-gray-400 text-sm">{{ material.category|default:'—' }}</span></td>
+                            <td><span class="text-gray-400 text-sm">{{ material.unit }}</span></td>
+                            <td>
+                                <input type="number" name="lead_time[]" 
+                                       class="form-control text-center" 
+                                       style="width: 80px;"
+                                       min="1" max="365"
+                                       value="{% if supplier and material.id in linked_material_ids %}{{ material.lead_time|default:'7' }}{% else %}7{% endif %}"
+                                       {% if not supplier or material.id not in linked_material_ids %}disabled{% endif %}>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-8">
+                <i class="fas fa-box text-gray-600 text-4xl mb-3"></i>
+                <p class="text-gray-400">No materials available.</p>
+                <a href="{% url 'suppliers:material_create' %}" class="btn btn-primary mt-3">Add Materials First</a>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Submit Buttons -->
+        <div class="flex justify-end gap-4 mt-6">
+            <a href="{% url 'suppliers:supplier_list' %}" class="btn btn-outline px-8">
+                Cancel
+            </a>
+            <button type="submit" class="btn btn-primary px-8">
+                <i class="fas fa-save mr-2"></i>
+                {% if supplier %}Update{% else %}Save{% endif %}
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+function toggleAllMaterials(masterCheckbox) {
+    var checkboxes = document.querySelectorAll('.material-check');
+    var leadTimeInputs = document.querySelectorAll('input[name="lead_time[]"]');
+    
+    checkboxes.forEach(function(cb, index) {
+        cb.checked = masterCheckbox.checked;
+        // Enable/disable the corresponding lead time input
+        var row = cb.closest('tr');
+        if (row) {
+            var ltInput = row.querySelector('input[name="lead_time[]"]');
+            if (ltInput) {
+                ltInput.disabled = !masterCheckbox.checked;
+            }
+        }
+    });
+}
+
+function toggleRow(checkbox) {
+    var row = checkbox.closest('tr');
+    if (row) {
+        var ltInput = row.querySelector('input[name="lead_time[]"]');
+        if (ltInput) {
+            ltInput.disabled = !checkbox.checked;
+            if (!checkbox.checked) {
+                ltInput.value = '7';
+            }
+        }
+    }
+}
+</script>
+{% endblock %}

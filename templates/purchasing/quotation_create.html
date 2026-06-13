@@ -1,0 +1,175 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Add Quotation - {{ pr.pr_number }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <div class="flex items-center gap-4 mb-2">
+                <a href="{% url 'purchasing:request_detail' pr.id %}" class="btn btn-outline btn-sm">
+                    <i class="fas fa-arrow-left"></i>
+                </a>
+                <h1 class="text-3xl font-bold text-white">Add Quotation</h1>
+                <span class="badge badge-{{ pr.status }}">{{ pr.get_status_display }}</span>
+            </div>
+            <p class="text-gray-400">{{ pr.pr_number }} - {{ pr.title }}</p>
+        </div>
+    </div>
+
+    <form method="post" action="{% url 'purchasing:quotation_create' pr.id %}">
+        {% csrf_token %}
+        
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Left: Form -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Supplier & Delivery Info -->
+                <div class="card p-6">
+                    <h3 class="text-xl font-bold text-white mb-4">
+                        <i class="fas fa-file-invoice mr-2 text-primary"></i>
+                        Quotation Information
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-gray-400 mb-2">Supplier <span class="text-red-400">*</span></label>
+                            <select name="supplier_id" class="form-control w-full" required>
+                                <option value="">-- Select Supplier --</option>
+                                {% for supplier in suppliers %}
+                                <option value="{{ supplier.id }}">
+                                    {{ supplier.name }} (Rating: {{ supplier.rating|floatformat:1 }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-gray-400 mb-2">Delivery Days <span class="text-red-400">*</span></label>
+                            <input type="number" name="delivery_days" class="form-control w-full" required min="1" placeholder="e.g. 14">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Items & Prices -->
+                <div class="card p-6">
+                    <h3 class="text-xl font-bold text-white mb-4">
+                        <i class="fas fa-list mr-2 text-primary"></i>
+                        Material Prices
+                    </h3>
+                    
+                    <div class="table-container">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Material</th>
+                                    <th>Quantity</th>
+                                    <th>Unit</th>
+                                    <th>Unit Price (SAR) <span class="text-red-400">*</span></th>
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in items %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td class="font-bold text-white">{{ item.material.name }}</td>
+                                    <td>{{ item.quantity }}</td>
+                                    <td>{{ item.material.unit }}</td>
+                                    <td>
+                                        <input type="hidden" name="material[]" value="{{ item.material.id }}">
+                                        <input type="hidden" name="quantity[]" value="{{ item.quantity }}">
+                                        <input type="number" name="unit_price[]" 
+                                               class="form-control w-32 unit-price-input" 
+                                               required min="0" step="0.01"
+                                               data-quantity="{{ item.quantity }}"
+                                               oninput="calculateRowTotal(this)">
+                                    </td>
+                                    <td>
+                                        <span class="row-total text-primary font-bold">0.00</span>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center text-gray-400">No materials in this request</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot>
+                                <tr class="font-bold text-lg">
+                                    <td colspan="4"></td>
+                                    <td class="text-white">Total Amount:</td>
+                                    <td class="text-primary" id="grandTotal">0.00 SAR</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right: Summary & Actions -->
+            <div class="space-y-6">
+                <div class="card p-6">
+                    <h3 class="text-xl font-bold text-white mb-4">
+                        <i class="fas fa-info-circle mr-2 text-primary"></i>
+                        Request Info
+                    </h3>
+                    
+                    <div class="space-y-3">
+                        <div>
+                            <p class="text-gray-400 text-sm">Request Number</p>
+                            <p class="text-white font-bold">{{ pr.pr_number }}</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-400 text-sm">Title</p>
+                            <p class="text-white">{{ pr.title }}</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-400 text-sm">Items Count</p>
+                            <p class="text-white">{{ items.count }}</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-400 text-sm">Status</p>
+                            <span class="badge badge-{{ pr.status }}">{{ pr.get_status_display }}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Actions -->
+                <div class="card p-6">
+                    <button type="submit" class="btn btn-success w-full mb-3">
+                        <i class="fas fa-check mr-2"></i>
+                        Submit Quotation
+                    </button>
+                    <a href="{% url 'purchasing:request_detail' pr.id %}" class="btn btn-outline w-full">
+                        <i class="fas fa-times mr-2"></i>
+                        Cancel
+                    </a>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function calculateRowTotal(input) {
+        const quantity = parseFloat(input.getAttribute('data-quantity')) || 0;
+        const price = parseFloat(input.value) || 0;
+        const total = quantity * price;
+        
+        // Update row total
+        const row = input.closest('tr');
+        row.querySelector('.row-total').textContent = total.toFixed(2);
+        
+        // Update grand total
+        let grandTotal = 0;
+        document.querySelectorAll('.row-total').forEach(function(el) {
+            grandTotal += parseFloat(el.textContent) || 0;
+        });
+        document.getElementById('grandTotal').textContent = grandTotal.toFixed(2) + ' SAR';
+    }
+</script>
+{% endblock %}

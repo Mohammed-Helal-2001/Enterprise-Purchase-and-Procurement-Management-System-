@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ LANG.activity_log }} - {{ LANG.purchase_system }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto">
+    <!-- Header -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-white mb-2">Activity Log</h1>
+        <p class="text-gray-400">View all user activity in the system</p>
+    </div>
+
+    <!-- Filters -->
+    <div class="card p-6 mb-6">
+        <form method="get" class="flex flex-wrap gap-4 items-end">
+            <div class="flex-1 min-w-[200px]">
+                <label class="block text-gray-400 mb-2">User</label>
+                <select name="user" class="input-field w-full">
+                    <option value="">All users</option>
+                    {% for u in users %}
+                    <option value="{{ u.id }}">{{ u.email }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="flex-1 min-w-[200px]">
+                <label class="block text-gray-400 mb-2">Action type</label>
+                <select name="action" class="input-field w-full">
+                    <option value="">All actions</option>
+                    <option value="login">Login</option>
+                    <option value="logout">Logout</option>
+                    <option value="create">Create</option>
+                    <option value="update">Update</option>
+                    <option value="delete">Delete</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-gray-400 mb-2">&nbsp;</label>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-filter ml-2"></i>
+                    Filter
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Activity Log Table -->
+    <div class="card">
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>User</th>
+                        <th>Action</th>
+                        <th>Description</th>
+                        <th>IP Address</th>
+                        <th>Date / Time</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for activity in activities %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ activity.user.email }}</td>
+                        <td>
+                            <span class="badge badge-{% if activity.action == 'login' %}success{% elif activity.action == 'logout' %}warning{% elif activity.action == 'delete' %}danger{% else %}primary{% endif %}">
+                                {% if activity.action == 'login' %}
+                                <i class="fas fa-sign-in-alt ml-1"></i> Login
+                                {% elif activity.action == 'logout' %}
+                                <i class="fas fa-sign-out-alt ml-1"></i> Logout
+                                {% elif activity.action == 'create' %}
+                                <i class="fas fa-plus ml-1"></i> Create
+                                {% elif activity.action == 'update' %}
+                                <i class="fas fa-edit ml-1"></i> Update
+                                {% elif activity.action == 'delete' %}
+                                <i class="fas fa-trash ml-1"></i> Delete
+                                {% else %}
+                                {{ activity.action }}
+                                {% endif %}
+                            </span>
+                        </td>
+                        <td>{{ activity.description }}</td>
+                        <td class="font-mono text-sm">{{ activity.ip_address|default:'Unknown' }}</td>
+                        <td>{{ activity.created_at|date:"Y-m-d H:i:s" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-8">
+                            <div class="empty-state">
+                                <i class="fas fa-history empty-state-icon"></i>
+                                <p class="empty-state-text">No activity recorded</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if activities.has_other_pages %}
+        <div class="p-4 border-t border-gray-700">
+            <div class="flex justify-between items-center">
+                <span class="text-gray-400">
+                    Page {{ activities.number }} of {{ activities.paginator.num_pages }}
+                </span>
+                <div class="flex gap-2">
+                    {% if activities.has_previous %}
+                    <a href="?page={{ activities.previous_page_number }}" class="btn btn-outline btn-sm">
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                    {% endif %}
+                    
+                    {% for num in activities.paginator.page_range %}
+                        {% if activities.number == num %}
+                        <span class="btn btn-primary btn-sm">{{ num }}</span>
+                        {% elif num > activities.number|add:'-3' and num < activities.number|add:'3' %}
+                        <a href="?page={{ num }}" class="btn btn-outline btn-sm">{{ num }}</a>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if activities.has_next %}
+                    <a href="?page={{ activities.next_page_number }}" class="btn btn-outline btn-sm">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

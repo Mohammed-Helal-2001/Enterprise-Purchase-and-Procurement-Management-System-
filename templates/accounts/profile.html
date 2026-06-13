@@ -1,0 +1,210 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Profile - Purchase System{% endblock %}
+
+{% block content %}
+<div class="container mx-auto">
+    <!-- Header -->
+    <div class="mb-8">
+        <div class="flex items-center gap-3 mb-2">
+            <div class="p-3 bg-blue-900 rounded-full">
+                <i class="fas fa-user-circle text-blue-400 text-3xl"></i>
+            </div>
+            <div>
+                <h1 class="text-3xl font-bold text-white">My Profile</h1>
+                <p class="text-gray-400">{{ user.get_role_display }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Profile Info (Read-only) -->
+        <div class="card p-6 lg:col-span-2">
+            <h3 class="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                <i class="fas fa-id-card text-blue-400"></i>
+                Account Information
+            </h3>
+            
+            <div class="space-y-5">
+                <!-- Name Row -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <p class="text-gray-500 text-sm mb-1">First Name</p>
+                        <div class="bg-gray-800 rounded-lg px-4 py-3 text-white border border-gray-700">
+                            {{ user.first_name|default:'—' }}
+                        </div>
+                    </div>
+                    <div>
+                        <p class="text-gray-500 text-sm mb-1">Last Name</p>
+                        <div class="bg-gray-800 rounded-lg px-4 py-3 text-white border border-gray-700">
+                            {{ user.last_name|default:'—' }}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Email Row -->
+                <div>
+                    <p class="text-gray-500 text-sm mb-1">Email Address</p>
+                    <div class="bg-gray-800 rounded-lg px-4 py-3 text-white border border-gray-700 flex items-center gap-2">
+                        <i class="fas fa-envelope text-gray-500"></i>
+                        {{ user.email }}
+                        <span class="ml-auto px-2 py-0.5 bg-green-900 text-green-300 rounded text-xs">Verified</span>
+                    </div>
+                </div>
+                
+                <!-- Phone Row -->
+                <div>
+                    <p class="text-gray-500 text-sm mb-1">Phone Number</p>
+                    <div class="bg-gray-800 rounded-lg px-4 py-3 text-white border border-gray-700 flex items-center gap-2">
+                        <i class="fas fa-phone text-gray-500"></i>
+                        {{ user.phone|default:'—' }}
+                    </div>
+                </div>
+                
+                <!-- Dept & Role Row -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <p class="text-gray-500 text-sm mb-1">Department</p>
+                        <div class="bg-gray-800 rounded-lg px-4 py-3 text-white border border-gray-700">
+                            {{ user.department|default:'—' }}
+                        </div>
+                    </div>
+                    <div>
+                        <p class="text-gray-500 text-sm mb-1">Role</p>
+                        <div class="bg-gray-800 rounded-lg px-4 py-3 border border-gray-700 flex items-center gap-2">
+                            {% if user.role == 'admin' %}
+                            <span class="px-2 py-0.5 bg-red-900 text-red-300 rounded text-xs font-bold">ADMIN</span>
+                            {% elif user.role == 'approver' %}
+                            <span class="px-2 py-0.5 bg-purple-900 text-purple-300 rounded text-xs font-bold">APPROVER</span>
+                            {% elif user.role == 'purchasing_officer' %}
+                            <span class="px-2 py-0.5 bg-blue-900 text-blue-300 rounded text-xs font-bold">PURCHASING</span>
+                            {% else %}
+                            <span class="px-2 py-0.5 bg-gray-700 text-gray-300 rounded text-xs font-bold">REQUESTER</span>
+                            {% endif %}
+                            <span class="text-white">{{ user.get_role_display }}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Member Since -->
+                <div>
+                    <p class="text-gray-500 text-sm mb-1">Member Since</p>
+                    <div class="bg-gray-800 rounded-lg px-4 py-3 text-white border border-gray-700 flex items-center gap-2">
+                        <i class="fas fa-calendar-alt text-gray-500"></i>
+                        {{ user.date_joined|date:"F d, Y" }}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Side: Password Change -->
+        <div class="space-y-6">
+            <!-- Change Password Card -->
+            <div class="card p-6">
+                <h3 class="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                    <i class="fas fa-lock text-yellow-400"></i>
+                    Change Password
+                </h3>
+                
+                <form method="post" class="space-y-4">
+                    {% csrf_token %}
+                    
+                    <div>
+                        <label class="block text-gray-400 mb-2 text-sm">Current Password</label>
+                        <div class="relative">
+                            <i class="fas fa-key absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"></i>
+                            <input type="password" name="current_password" class="input-field w-full pl-10" placeholder="Enter current password" required>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-gray-400 mb-2 text-sm">New Password</label>
+                        <div class="relative">
+                            <i class="fas fa-lock absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"></i>
+                            <input type="password" name="new_password" class="input-field w-full pl-10" placeholder="Enter new password" required>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-gray-400 mb-2 text-sm">Confirm New Password</label>
+                        <div class="relative">
+                            <i class="fas fa-check-circle absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"></i>
+                            <input type="password" name="confirm_password" class="input-field w-full pl-10" placeholder="Re-enter new password" required>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" name="change_password" class="btn btn-yellow w-full flex items-center justify-center gap-2 mt-2">
+                        <i class="fas fa-save"></i>
+                        Update Password
+                    </button>
+                </form>
+            </div>
+            
+            <!-- Account Security Card -->
+            <div class="card p-6">
+                <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                    <i class="fas fa-shield-alt text-green-400"></i>
+                    Account Security
+                </h3>
+                <div class="space-y-3 text-sm">
+                    <div class="flex items-center justify-between py-2 border-b border-gray-700">
+                        <span class="text-gray-400">Two-Factor Auth</span>
+                        <span class="text-gray-600">Coming soon</span>
+                    </div>
+                    <div class="flex items-center justify-between py-2 border-b border-gray-700">
+                        <span class="text-gray-400">Last Password Change</span>
+                        <span class="text-white">—</span>
+                    </div>
+                    <div class="flex items-center justify-between py-2">
+                        <span class="text-gray-400">Active Sessions</span>
+                        <span class="text-white">1 active</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Activity -->
+    <div class="card p-6 mt-6">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                <i class="fas fa-clock text-blue-400"></i>
+                Recent Activity
+            </h3>
+            <a href="{% url 'accounts:activity_log' %}" class="text-blue-400 hover:underline text-sm">View all</a>
+        </div>
+        
+        {% if recent_activities %}
+        <div class="space-y-1">
+            {% for activity in recent_activities %}
+            <div class="flex items-center gap-4 py-3 px-4 rounded-lg hover:bg-gray-800 transition-colors">
+                <div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0
+                    {% if activity.action == 'login' %}bg-green-900 text-green-300
+                    {% elif activity.action == 'logout' %}bg-yellow-900 text-yellow-300
+                    {% elif activity.action == 'send_rfq' %}bg-blue-900 text-blue-300
+                    {% else %}bg-gray-700 text-gray-300{% endif %}">
+                    <i class="fas fa-{% if activity.action == 'login' %}sign-in-alt
+                        {% elif activity.action == 'logout' %}sign-out-alt
+                        {% elif activity.action == 'send_rfq' %}paper-plane
+                        {% else %}history{% endif %} text-sm"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-white text-sm truncate">{{ activity.description }}</p>
+                    <p class="text-gray-500 text-xs">{{ activity.created_at|date:"M d, Y H:i" }}</p>
+                </div>
+                {% if activity.ip_address %}
+                <span class="text-gray-600 text-xs hidden md:block">{{ activity.ip_address }}</span>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-10">
+            <i class="fas fa-history text-gray-600 text-4xl mb-3"></i>
+            <p class="text-gray-500">No recent activity</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

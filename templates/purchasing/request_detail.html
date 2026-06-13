@@ -1,0 +1,485 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ pr.pr_number }} - Purchase System{% endblock %}
+
+{% block content %}
+<div class="container mx-auto">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <div class="flex items-center gap-4 mb-2">
+                <a href="{% url 'purchasing:request_list' %}" class="btn btn-outline btn-sm">
+                    <i class="fas fa-arrow-left"></i>
+                </a>
+                <h1 class="text-3xl font-bold text-white">{{ pr.pr_number }}</h1>
+                <span class="badge badge-{{ pr.status }}">{{ pr.get_status_display }}</span>
+            </div>
+            <p class="text-gray-400">{{ pr.title }}</p>
+        </div>
+        
+        <div class="flex gap-2">
+            {% if pr.status == 'draft' %}
+            {% if pr.created_by == user or user.role == 'admin' or user.role == 'purchasing_officer' %}
+            <form method="post" action="{% url 'purchasing:submit_for_approval' pr.id %}" class="inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-warning">
+                    <i class="fas fa-paper-plane mr-2"></i>
+                    {{ LANG.submit_approval }}
+                </button>
+            </form>
+            {% endif %}
+            {% endif %}
+            
+            {% if pr.status == 'pending_approval' %}
+                {% if user.role == 'approver' or user.role == 'admin' or user.role == 'purchasing_officer' %}
+                    <form method="post" action="{% url 'purchasing:approve_request' pr.id %}" class="inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-check mr-2"></i>
+                            {{ LANG.approve }}
+                        </button>
+                    </form>
+                    <button onclick="showRejectModal()" class="btn btn-danger">
+                        <i class="fas fa-times mr-2"></i>
+                        {{ LANG.reject }}
+                    </button>
+                {% endif %}
+            {% endif %}
+            
+            {% if pr.status == 'approved' %}
+                {% if user.role == 'purchasing_officer' or user.role == 'admin' %}
+                    <button onclick="showRejectModal()" class="btn btn-danger">
+                        <i class="fas fa-times mr-2"></i>
+                        {{ LANG.reject }}
+                    </button>
+                {% endif %}
+            {% endif %}
+            
+            {% if pr.status == 'rfq_sent' %}
+                {% if quotations %}
+                <a href="{% url 'purchasing:quotation_comparison' pr.id %}" class="btn btn-primary">
+                    <i class="fas fa-balance-scale mr-2"></i>
+                    {{ LANG.compare_offers }}
+                </a>
+                {% endif %}
+            {% endif %}
+            
+            <!-- PDF Export Button -->
+            <a href="{% url 'purchasing:export_pr_pdf' pr.id %}" class="btn btn-success" target="_blank">
+                <i class="fas fa-file-pdf mr-2"></i>
+                Export PDF
+            </a>
+            
+            <!-- Send to Supplier Button - Only for Admin and Purchasing Officer -->
+            {% if user.role == 'admin' or user.role == 'purchasing_officer' %}
+            <button onclick="showEmailModal()" class="btn btn-info">
+                <i class="fas fa-envelope mr-2"></i>
+                Send to Supplier
+            </button>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Main Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Left Column - Request Info -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Request Details Card -->
+            <div class="card p-6">
+                <h3 class="text-xl font-bold text-white mb-4">{{ LANG.request_details }}</h3>
+                
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <p class="text-gray-400 text-sm">{{ LANG.request_creator }}</p>
+                        <p class="text-white">{{ pr.created_by.get_full_name|default:pr.created_by.email }}</p>
+                    </div>
+                    <div>
+                        <p class="text-gray-400 text-sm">{{ LANG.creation_date }}</p>
+                        <p class="text-white">{{ pr.created_at|date:"Y-m-d H:i" }}</p>
+                    </div>
+                    {% if pr.department %}
+                    <div>
+                        <p class="text-gray-400 text-sm">Department</p>
+                        <p class="text-white">{{ pr.department }}</p>
+                    </div>
+                    {% endif %}
+                    {% if pr.priority %}
+                    <div>
+                        <p class="text-gray-400 text-sm">Priority</p>
+                        <span class="badge badge-{{ pr.priority }}">{{ pr.get_priority_display }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                {% if pr.description %}
+                <div class="mb-4">
+                    <p class="text-gray-400 text-sm">{{ LANG.description }}</p>
+                    <p class="text-white">{{ pr.description }}</p>
+                </div>
+                {% endif %}
+                
+                {% if pr.notes %}
+                <div class="mb-4">
+                    <p class="text-gray-400 text-sm">Notes</p>
+                    <p class="text-white">{{ pr.notes }}</p>
+                </div>
+                {% endif %}
+                
+                <!-- Items Table -->
+                <h4 class="text-lg font-bold text-white mb-3">Requested materials</h4>
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Material</th>
+                                <th>Quantity</th>
+                                <th>Unit</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in items %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td>{{ item.material.name }}</td>
+                                <td>{{ item.quantity }}</td>
+                                <td>{{ item.material.unit }}</td>
+                                <td>{{ item.description|default:'-' }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center text-gray-400">No materials found</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Quotations Card -->
+            {% if quotations %}
+            <div class="card p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-bold text-white">Quotations</h3>
+                    <span class="badge badge-pending">{{ quotations.count }} quotations</span>
+                </div>
+                
+                <div class="space-y-4">
+                    {% for quotation in quotations %}
+                    <div class="card p-4 {% if quotation.is_winner %}best-supplier{% endif %}">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h4 class="text-lg font-bold text-white">{{ quotation.supplier.name }}</h4>
+                                <p class="text-gray-400 text-sm">
+                                    <i class="fas fa-clock mr-1"></i>
+                                    Delivery time: {{ quotation.delivery_days }} days
+                                </p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-2xl font-bold text-primary">{{ quotation.total_amount|floatformat:2 }}</p>
+                                <p class="text-gray-400 text-sm">SAR</p>
+                            </div>
+                        </div>
+                        
+                        {% if quotation.is_winner %}
+                        <span class="best-badge">Winner</span>
+                        {% endif %}
+                        
+                        <div class="mt-3 pt-3 border-t border-gray-700">
+                            <a href="{% url 'suppliers:quotation_detail' quotation.id %}" class="text-primary hover:underline">
+                                View details <i class="fas fa-arrow-left mr-1"></i>
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                {% if pr.status == 'rfq_sent' %}
+                <div class="mt-4">
+                    <button onclick="suggestBestSupplier({{ pr.id }})" class="btn btn-success w-full">
+                        <i class="fas fa-lightbulb mr-2"></i>
+                        {{ LANG.suggest_best_supplier }}
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Right Column - Status & Actions -->
+        <div class="space-y-6">
+            <!-- Status Card -->
+            <div class="card p-6">
+                <h3 class="text-xl font-bold text-white mb-4">Request status</h3>
+                
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-400">Status</span>
+                        <span class="badge badge-{{ pr.status }}">{{ pr.get_status_display }}</span>
+                    </div>
+                    
+                    {% if pr.approved_by %}
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-400">Approved by</span>
+                        <span class="text-white">{{ pr.approved_by.get_full_name }}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-400">Approval date</span>
+                        <span class="text-white">{{ pr.approved_at|date:"Y-m-d H:i" }}</span>
+                    </div>
+                    {% endif %}
+                    
+                    {% if pr.rejected_by %}
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-400">Rejected by</span>
+                        <span class="text-white">{{ pr.rejected_by.get_full_name }}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-400">Rejection reason</span>
+                        <span class="text-white">{{ pr.rejection_reason }}</span>
+                    </div>
+                    {% endif %}
+                    
+                    {% if pr.awarded_supplier %}
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-400">Awarded supplier</span>
+                        <span class="text-white">{{ pr.awarded_supplier.name }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- RFQ Logs Card -->
+            {% if rfq_logs %}
+            <div class="card p-6">
+                <h3 class="text-xl font-bold text-white mb-4">RFQ Delivery Status</h3>
+                
+                <div class="space-y-3">
+                    {% for log in rfq_logs %}
+                    <div class="border {% if log.email_sent %}border-green-600 bg-green-900 bg-opacity-20{% else %}border-red-600 bg-red-900 bg-opacity-20{% endif %} rounded-lg p-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center gap-2">
+                                {% if log.email_sent %}
+                                <span class="text-green-400"><i class="fas fa-check-circle"></i></span>
+                                <p class="text-white font-semibold">{{ log.supplier.name }}</p>
+                                {% else %}
+                                <span class="text-red-400"><i class="fas fa-exclamation-circle"></i></span>
+                                <p class="text-white font-semibold">{{ log.supplier.name }}</p>
+                                {% endif %}
+                            </div>
+                            {% if log.email_sent %}
+                            <span class="badge badge-success">Delivered</span>
+                            {% else %}
+                            <span class="badge badge-danger">Failed</span>
+                            {% endif %}
+                        </div>
+                        <p class="text-gray-300 text-xs">{{ log.sent_at|date:"Y-m-d H:i" }}</p>
+                        {% if log.email_error %}
+                        <div class="mt-3 p-3 bg-gray-900 rounded border border-red-700">
+                            <p class="text-red-200 text-xs font-mono break-words">Error: {{ log.email_error }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Approval History Card -->
+            {% if approval_history %}
+            <div class="card p-6">
+                <h3 class="text-xl font-bold text-white mb-4">Approval history</h3>
+                
+                <div class="space-y-3">
+                    {% for history in approval_history %}
+                    <div class="p-3 bg-gray-800 rounded-lg">
+                        <div class="flex items-center gap-2 mb-1">
+                            {% if history.action == 'approve' %}
+                            <span class="text-green-400"><i class="fas fa-check"></i></span>
+                            {% else %}
+                            <span class="text-red-400"><i class="fas fa-times"></i></span>
+                            {% endif %}
+                            <span class="text-white">{{ history.action_by.get_full_name }}</span>
+                        </div>
+                        <p class="text-gray-400 text-sm">{{ history.created_at|date:"Y-m-d H:i" }}</p>
+                        {% if history.reason %}
+                        <p class="text-gray-400 text-sm mt-1">{{ history.reason }}</p>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Reject Modal -->
+<div id="rejectModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <span class="close" onclick="closeRejectModal()">&times;</span>
+        <h2 class="text-2xl font-bold text-white mb-4">Reject Purchase Request</h2>
+        <form method="post" action="{% url 'purchasing:reject_request' pr.id %}">
+            {% csrf_token %}
+            <div class="mb-4">
+                <label for="reason" class="block text-gray-400 mb-2">Reason for rejection</label>
+                <textarea name="reason" id="reason" rows="4" class="form-control" required></textarea>
+            </div>
+            <div class="flex gap-2">
+                <button type="submit" class="btn btn-danger">Reject Request</button>
+                <button type="button" onclick="closeRejectModal()" class="btn btn-outline">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Send Email Modal - Horizontal Layout -->
+<div id="emailModal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 800px; width: 90%;">
+        <span class="close" onclick="closeEmailModal()">&times;</span>
+        
+        <!-- Modal Header -->
+        <div class="flex items-center gap-3 mb-4 pb-4 border-b border-gray-700">
+            <div class="p-3 bg-blue-900 rounded-full flex-shrink-0">
+                <i class="fas fa-envelope text-blue-400 text-xl"></i>
+            </div>
+            <div>
+                <h2 class="text-2xl font-bold text-white">Send to Supplier</h2>
+                <p class="text-gray-400 text-sm">Send <strong>{{ pr.pr_number }}</strong> as a professional PDF</p>
+            </div>
+        </div>
+        
+        {% if all_suppliers %}
+        <form method="post" action="{% url 'purchasing:send_pr_email' pr.id %}">
+            {% csrf_token %}
+            
+            <!-- Horizontal Two Columns Layout -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Left Column: Supplier Selection -->
+                <div>
+                    <label class="block text-gray-400 mb-2 font-semibold">
+                        <i class="fas fa-building mr-1"></i> Select Supplier <span class="text-red-400">*</span>
+                    </label>
+                    
+                    {% if all_suppliers.count == 0 %}
+                    <div class="p-4 bg-yellow-900 bg-opacity-30 border border-yellow-700 rounded-xl text-center">
+                        <i class="fas fa-exclamation-circle text-yellow-400 text-2xl mb-2"></i>
+                        <p class="text-yellow-200 text-sm">No suppliers provide the materials needed in this request.</p>
+                    </div>
+                    {% else %}
+                    <select name="supplier_id" id="supplier_id" class="form-control w-full" required onchange="updateSupplierPreview(this)">
+                        <option value="">-- Choose a supplier --</option>
+                        {% for supplier in all_suppliers %}
+                        <option value="{{ supplier.id }}" 
+                                data-email="{{ supplier.email }}"
+                                data-contact="{{ supplier.contact_person|default:'N/A' }}"
+                                data-phone="{{ supplier.phone|default:'N/A' }}"
+                                data-rating="{{ supplier.rating|default:'0' }}">
+                            {{ supplier.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    {% endif %}
+                    
+                    <!-- Supplier Info Preview -->
+                    <div id="supplierPreview" class="mt-3 bg-gray-800 rounded-xl p-4 border border-gray-700" style="display: none;">
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="text-white font-bold">
+                                <i class="fas fa-user-tie mr-1 text-blue-400"></i>
+                                <span id="previewName" class="text-blue-400"></span>
+                            </h4>
+                            <span id="previewRatingBadge" class="px-2 py-1 bg-yellow-900 text-yellow-300 rounded text-xs font-bold"></span>
+                        </div>
+                        <div class="text-sm space-y-1">
+                            <p><span class="text-gray-500">Contact:</span> <span class="text-white" id="previewContact">-</span></p>
+                            <p><span class="text-gray-500">Phone:</span> <span class="text-white" id="previewPhone">-</span></p>
+                            <p><span class="text-gray-500">Email:</span> <span class="text-blue-400" id="previewEmail">-</span></p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Right Column: Message -->
+                <div class="flex flex-col">
+                    <label class="block text-gray-400 mb-2 font-semibold">
+                        <i class="fas fa-comment mr-1"></i> Optional Message
+                    </label>
+                    <textarea name="custom_message" id="custom_message" rows="4" class="form-control w-full flex-1" 
+                              placeholder="Add a brief note for the supplier..."></textarea>
+                    
+                    <div class="mt-3 text-xs text-gray-500">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        The PDF will be attached automatically.
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="flex gap-3 mt-4 pt-4 border-t border-gray-700">
+                <button type="submit" class="btn btn-info flex items-center gap-2 px-6">
+                    <i class="fas fa-paper-plane"></i>
+                    Send Email
+                </button>
+                <button type="button" onclick="closeEmailModal()" class="btn btn-outline px-6">Cancel</button>
+            </div>
+        </form>
+        {% else %}
+        <div class="p-8 bg-gray-800 rounded-xl text-center">
+            <i class="fas fa-exclamation-triangle text-yellow-400 text-4xl mb-4"></i>
+            <h3 class="text-white text-lg font-bold mb-2">No Suppliers Found</h3>
+            <p class="text-gray-400 mb-4">Please add suppliers to the system first before sending purchase requests.</p>
+            <a href="{% url 'suppliers:supplier_list' %}" class="btn btn-primary inline-flex items-center gap-2">
+                <i class="fas fa-users"></i>
+                Manage Suppliers
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function showRejectModal() {
+    document.getElementById('rejectModal').style.display = 'block';
+}
+
+function closeRejectModal() {
+    document.getElementById('rejectModal').style.display = 'none';
+}
+
+function showEmailModal() {
+    document.getElementById('emailModal').style.display = 'block';
+}
+
+function closeEmailModal() {
+    document.getElementById('emailModal').style.display = 'none';
+    document.getElementById('supplierPreview').style.display = 'none';
+    var sel = document.getElementById('supplier_id');
+    if (sel) sel.value = '';
+}
+
+function updateSupplierPreview(select) {
+    var preview = document.getElementById('supplierPreview');
+    if (select.value) {
+        var option = select.options[select.selectedIndex];
+        document.getElementById('previewName').textContent = option.text;
+        document.getElementById('previewContact').textContent = option.getAttribute('data-contact') || 'N/A';
+        document.getElementById('previewPhone').textContent = option.getAttribute('data-phone') || 'N/A';
+        document.getElementById('previewEmail').textContent = option.getAttribute('data-email') || 'N/A';
+        var rating = parseFloat(option.getAttribute('data-rating')) || 0;
+        document.getElementById('previewRatingBadge').textContent = rating.toFixed(1);
+        preview.style.display = 'block';
+    } else {
+        preview.style.display = 'none';
+    }
+}
+
+// Close modals when clicking outside
+window.onclick = function(event) {
+    var rejectModal = document.getElementById('rejectModal');
+    var emailModal = document.getElementById('emailModal');
+    if (event.target == rejectModal) rejectModal.style.display = 'none';
+    if (event.target == emailModal) emailModal.style.display = 'none';
+}
+</script>
+{% endblock %}
